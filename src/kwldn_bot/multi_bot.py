@@ -10,7 +10,7 @@ from aiogram.types import User
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, TokenBasedRequestHandler, setup_application
 from aiohttp import web
 
-from xbot.config import config
+from .config import config
 
 MAIN_BOT_PATH = "/webhook/main"
 OTHER_BOTS_PATH = "/webhook/bot/{bot_token}"
