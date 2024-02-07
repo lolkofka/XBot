@@ -10,14 +10,12 @@ from aiogram.types import User
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, TokenBasedRequestHandler, setup_application
 from aiohttp import web
 
-from .config import config
-
 MAIN_BOT_PATH = "/webhook/main"
 OTHER_BOTS_PATH = "/webhook/bot/{bot_token}"
 
 
 class XMultiBot:
-    def __init__(self, base_url: str, port: int, startup_tokens: list[str]):
+    def __init__(self, main_token: str, base_url: str, port: int, startup_tokens: list[str]):
         self.router = Router()
 
         self._dispatcher = Dispatcher()
@@ -26,7 +24,7 @@ class XMultiBot:
         self.minions: dict[str, Bot] = {}
 
         self._bot_settings = {"session": AiohttpSession(), "parse_mode": ParseMode.HTML}
-        self.main_bot = Bot(config['kwldn_bot']['token'], **self._bot_settings)
+        self.main_bot = Bot(main_token, **self._bot_settings)
 
         self._secret = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(64)])
         self._port = port
