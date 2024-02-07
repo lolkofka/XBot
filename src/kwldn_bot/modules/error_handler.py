@@ -6,7 +6,7 @@ from aiogram import Router, F
 from aiogram.types import Message, ErrorEvent, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from xbot.config import config
+from ..config import config
 
 message_limit = 3970
 
