@@ -24,7 +24,7 @@ if not os.path.exists('assets'):
     os.mkdir('assets')
 
 config = {
-    'xbot': {
+    'kwldn_bot': {
         'token': '',
         'owners': [],
         'mongo': '',

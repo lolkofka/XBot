@@ -26,7 +26,7 @@ class XMultiBot:
         self.minions: dict[str, Bot] = {}
 
         self._bot_settings = {"session": AiohttpSession(), "parse_mode": ParseMode.HTML}
-        self.main_bot = Bot(config['xbot']['token'], **self._bot_settings)
+        self.main_bot = Bot(config['kwldn_bot']['token'], **self._bot_settings)
 
         self._secret = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(64)])
         self._port = port
