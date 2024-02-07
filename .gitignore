@@ -1,0 +1,7 @@
+/.idea/
+/venv/
+/.venv/
+/data/
+/assets/
+main.py
+/handlers/
