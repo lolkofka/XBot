@@ -2,7 +2,7 @@ import math
 import time
 import traceback
 
-from aiogram import Router, F
+from aiogram import Router, F, Bot
 from aiogram.types import Message, ErrorEvent, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -27,15 +27,16 @@ def get_user_markup(user_url: str):
     return builder.as_markup()
 
 
-async def report(exception: ErrorEvent, owners: list[int], object_name: str, text: str, username: str, user_id: int,
+async def report(bot: Bot, owners: list[int], object_name: str, text: str, username: str,
+                 user_id: int,
                  user_url: str):
     for admin in owners:
         traceback_log = BufferedInputFile(traceback.format_exc().encode(),
                                           filename=f"Traceback{math.floor(time.time())}.txt")
-        await exception.bot.send_document(admin, traceback_log,
-                                          caption=f'⚠️ Произошла ошибка при обработке {object_name} от @{username} [<code>{user_id}</code>]!\n'
-                                                  f'<pre>{text}</pre>',
-                                          reply_markup=get_user_markup(user_url))
+        await bot.send_document(admin, traceback_log,
+                                caption=f'⚠️ Произошла ошибка при обработке {object_name} от @{username} [<code>{user_id}</code>]!\n'
+                                        f'<pre>{text}</pre>',
+                                reply_markup=get_user_markup(user_url))
 
 
 def add_to_router(main_router: Router, owners: list[int], url: str):
@@ -45,14 +46,15 @@ def add_to_router(main_router: Router, owners: list[int], url: str):
     async def error_handler(exception: ErrorEvent, message: Message):
         await message.reply('❌ Похоже, что-то пошло не так, репорт отправлен', reply_markup=get_support_markup(url))
 
-        await report(exception, owners, 'сообщения', message.text, message.from_user.username, message.from_user.id,
+        await report(message.bot, owners, 'сообщения', message.text, message.from_user.username,
+                     message.from_user.id,
                      message.from_user.url)
 
     @error_handler_router.error(F.update.callback_query.as_("query"))
     async def error_handler(exception: ErrorEvent, query: CallbackQuery):
         await query.answer('❌ Похоже, что-то пошло не так, репорт отправлен', show_alert=True)
 
-        await report(exception, owners, 'кнопки', query.data, query.from_user.username, query.from_user.id,
+        await report(query.bot, owners, 'кнопки', query.data, query.from_user.username, query.from_user.id,
                      query.from_user.url)
 
     main_router.include_router(error_handler_router)
