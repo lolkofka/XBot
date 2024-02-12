@@ -3,6 +3,7 @@ import time
 import traceback
 
 from aiogram import Router, F, Bot
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import Message, ErrorEvent, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -30,13 +31,16 @@ def get_user_markup(user_url: str):
 async def report(bot: Bot, owners: list[int], object_name: str, text: str, username: str,
                  user_id: int,
                  user_url: str):
+    traceback_log = BufferedInputFile(traceback.format_exc().encode(),
+                                      filename=f"Traceback{math.floor(time.time())}.txt")
     for admin in owners:
-        traceback_log = BufferedInputFile(traceback.format_exc().encode(),
-                                          filename=f"Traceback{math.floor(time.time())}.txt")
-        await bot.send_document(admin, traceback_log,
-                                caption=f'⚠️ Произошла ошибка при обработке {object_name} от @{username} [<code>{user_id}</code>]!\n'
-                                        f'<pre>{text}</pre>',
-                                reply_markup=get_user_markup(user_url))
+        try:
+            await bot.send_document(admin, traceback_log,
+                                    caption=f'⚠️ Произошла ошибка при обработке {object_name} от @{username} [<code>{user_id}</code>]!\n'
+                                            f'<pre>{text}</pre>',
+                                    reply_markup=get_user_markup(user_url))
+        except TelegramBadRequest:
+            pass
 
 
 def add_to_router(main_router: Router, owners: list[int], url: str):
