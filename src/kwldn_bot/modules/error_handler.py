@@ -3,7 +3,7 @@ import time
 import traceback
 
 from aiogram import Router, F, Bot
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import AiogramError
 from aiogram.types import Message, ErrorEvent, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -39,7 +39,7 @@ async def report(bot: Bot, owners: list[int], object_name: str, text: str, usern
                                     caption=f'⚠️ Произошла ошибка при обработке {object_name} от @{username} [<code>{user_id}</code>]!\n'
                                             f'<pre>{text}</pre>',
                                     reply_markup=get_user_markup(user_url))
-        except TelegramBadRequest:
+        except AiogramError:
             pass
 
 
