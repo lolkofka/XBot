@@ -1,15 +1,96 @@
+import random
+import string
+
 from aiogram import Dispatcher, Router, Bot
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramUnauthorizedError
+from aiogram.types import User
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application, TokenBasedRequestHandler
+from aiohttp import web
 
 
-class XBot:
+class BaseBot:
     def __init__(self, token: str):
-        self.router = Router()
+        self.token = token
 
+        self.router = Router()
         self.dispatcher = Dispatcher()
         self.dispatcher.include_router(self.router)
 
-        self.main_bot = Bot(token, parse_mode=ParseMode.HTML)
+        self._bot_settings = {"session": AiohttpSession(), "parse_mode": ParseMode.HTML}
+        self.main_bot = Bot(self.token, **self._bot_settings)
+
+    async def start(self) -> None:
+        pass
+
+
+class XBot(BaseBot):
+    def __init__(self, token: str):
+        super().__init__(token)
+
+    async def start(self) -> None:
+        await self.dispatcher.start_polling(self.main_bot)
+
+
+MAIN_BOT_PATH = "/webhook/main"
+OTHER_BOTS_PATH = "/webhook/bot/{bot_token}"
+
+
+class XMultiBot(BaseBot):
+    def __init__(self, main_token: str, base_url: str, port: int, startup_tokens: list[str]):
+        super().__init__(main_token)
+        self.minions: dict[str, Bot] = {}
+
+        self._secret = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(64)])
+        self._port = port
+        self._base_url = base_url
+
+        async def on_startup(bot: Bot):
+            for token in startup_tokens:
+                new_bot = Bot(token, self.main_bot.session)
+                try:
+                    await new_bot.get_me()
+                except TelegramUnauthorizedError:
+                    continue
+                await new_bot.delete_webhook(drop_pending_updates=True)
+                await new_bot.set_webhook("/webhook/bot/" + token)
+                self.minions[token] = new_bot
+
+            await bot.set_webhook(f"{self._base_url}{MAIN_BOT_PATH}", secret_token=self._secret)
+
+        self.dispatcher.startup.register(on_startup)
+
+    async def add_minion(self, token: str) -> User | None:
+        new_bot = Bot(token, **self._bot_settings)
+        try:
+            bot_user = await new_bot.get_me()
+        except TelegramUnauthorizedError:
+            return None
+        await new_bot.delete_webhook(drop_pending_updates=True)
+        await new_bot.set_webhook(f'{self._base_url}{OTHER_BOTS_PATH.format(bot_token=token)}')
+        self.minions[token] = new_bot
+
+        return bot_user
+
+    async def delete_minion(self, token: str) -> bool:
+        if token in self.minions:
+            await self.minions[token].delete_webhook()
+            del self.minions[token]
+            return True
+        else:
+            return False
 
     async def start(self):
-        await self.dispatcher.start_polling(self.main_bot)
+        app = web.Application()
+        SimpleRequestHandler(dispatcher=self.dispatcher, bot=self.main_bot,
+                             secret_token=self._secret).register(app,
+                                                                 path=MAIN_BOT_PATH)
+        TokenBasedRequestHandler(
+            dispatcher=self.dispatcher,
+            bot_settings=self._bot_settings
+        ).register(app, path=OTHER_BOTS_PATH)
+
+        setup_application(app, self.dispatcher, bot=self.main_bot)
+
+        web.run_app(app, host='0.0.0.0', port=self._port)
