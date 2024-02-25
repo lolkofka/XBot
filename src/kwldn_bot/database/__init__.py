@@ -4,11 +4,10 @@ from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from .types import *
-from .. import BasicBotConfig
 
 
-async def connect(config: BasicBotConfig, models: list[Type[Document]]):
-    client = AsyncIOMotorClient(config.bot.mongo)
+async def connect(mongo: str, database: str, models: list[Type[Document]]):
+    client = AsyncIOMotorClient(mongo)
 
-    await init_beanie(database=client[config.bot.database],
+    await init_beanie(database=client[database],
                       document_models=models)
