@@ -38,28 +38,13 @@ OTHER_BOTS_PATH = "/webhook/bot/{bot_token}"
 
 
 class XMultiBot(BaseBot):
-    def __init__(self, main_token: str, base_url: str, port: int, startup_tokens: list[str]):
+    def __init__(self, main_token: str, base_url: str, port: int):
         super().__init__(main_token)
         self.minions: dict[str, Bot] = {}
 
         self._secret = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(64)])
         self._port = port
         self._base_url = base_url
-
-        async def on_startup(bot: Bot):
-            for token in startup_tokens:
-                new_bot = Bot(token, self.main_bot.session)
-                try:
-                    await new_bot.get_me()
-                except TelegramUnauthorizedError:
-                    continue
-                await new_bot.delete_webhook(drop_pending_updates=True)
-                await new_bot.set_webhook("/webhook/bot/" + token)
-                self.minions[token] = new_bot
-
-            await bot.set_webhook(f"{self._base_url}{MAIN_BOT_PATH}", secret_token=self._secret)
-
-        self.dispatcher.startup.register(on_startup)
 
     async def add_minion(self, token: str) -> User | None:
         new_bot = Bot(token, **self._bot_settings)
@@ -80,6 +65,22 @@ class XMultiBot(BaseBot):
             return True
         else:
             return False
+
+    def register_minions(self, tokens: list[str]):
+        async def on_startup(bot: Bot):
+            for token in tokens:
+                new_bot = Bot(token, self.main_bot.session)
+                try:
+                    await new_bot.get_me()
+                except TelegramUnauthorizedError:
+                    continue
+                await new_bot.delete_webhook(drop_pending_updates=True)
+                await new_bot.set_webhook("/webhook/bot/" + token)
+                self.minions[token] = new_bot
+
+            await bot.set_webhook(f"{self._base_url}{MAIN_BOT_PATH}", secret_token=self._secret)
+
+        self.dispatcher.startup.register(on_startup)
 
     async def start(self):
         app = web.Application()
