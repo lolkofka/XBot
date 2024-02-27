@@ -1,3 +1,4 @@
+import asyncio
 import random
 import string
 
@@ -94,4 +95,8 @@ class XMultiBot(BaseBot):
 
         setup_application(app, self.dispatcher, bot=self.main_bot)
 
-        web.run_app(app, host='0.0.0.0', port=self._port)
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, host='0.0.0.0', port=self._port)
+        await site.start()
+        await asyncio.Event().wait()
