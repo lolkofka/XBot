@@ -47,6 +47,17 @@ class XMultiBot(BaseBot):
         self._port = port
         self._base_url = base_url
 
+        self.app = web.Application()
+        SimpleRequestHandler(dispatcher=self.dispatcher, bot=self.main_bot,
+                             secret_token=self._secret).register(self.app,
+                                                                 path=MAIN_BOT_PATH)
+        TokenBasedRequestHandler(
+            dispatcher=self.dispatcher,
+            bot_settings=self._bot_settings
+        ).register(self.app, path=OTHER_BOTS_PATH)
+
+        setup_application(self.app, self.dispatcher, bot=self.main_bot)
+
     async def add_minion(self, token: str) -> User | None:
         new_bot = Bot(token, **self._bot_settings)
         try:
@@ -84,15 +95,9 @@ class XMultiBot(BaseBot):
         self.dispatcher.startup.register(on_startup)
 
     async def start(self):
-        app = web.Application()
-        SimpleRequestHandler(dispatcher=self.dispatcher, bot=self.main_bot,
-                             secret_token=self._secret).register(app,
-                                                                 path=MAIN_BOT_PATH)
-        TokenBasedRequestHandler(
-            dispatcher=self.dispatcher,
-            bot_settings=self._bot_settings
-        ).register(app, path=OTHER_BOTS_PATH)
+        runner = web.AppRunner(self.app)
+        await runner.setup()
 
-        setup_application(app, self.dispatcher, bot=self.main_bot)
-
-        await web._run_app(app, host='0.0.0.0', port=self._port)
+        site = web.TCPSite(runner, '0.0.0.0', self._port)
+        await site.start()
+        await asyncio.Event().wait()
