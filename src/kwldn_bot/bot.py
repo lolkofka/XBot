@@ -46,6 +46,7 @@ class XMultiBot(BaseBot):
         self._secret = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(64)])
         self._port = port
         self._base_url = base_url
+        self._startup_tokens = []
 
         self.app = web.Application()
         SimpleRequestHandler(dispatcher=self.dispatcher, bot=self.main_bot,
@@ -57,6 +58,21 @@ class XMultiBot(BaseBot):
         ).register(self.app, path=OTHER_BOTS_PATH)
 
         setup_application(self.app, self.dispatcher, bot=self.main_bot)
+
+        async def on_startup(bot: Bot):
+            for token in self._startup_tokens:
+                new_bot = Bot(token, self.main_bot.session)
+                try:
+                    await new_bot.get_me()
+                except TelegramUnauthorizedError:
+                    continue
+                await new_bot.delete_webhook(drop_pending_updates=True)
+                await new_bot.set_webhook("/webhook/bot/" + token)
+                self.minions[token] = new_bot
+
+            await bot.set_webhook(f"{self._base_url}{MAIN_BOT_PATH}", secret_token=self._secret)
+
+        self.dispatcher.startup.register(on_startup)
 
     async def add_minion(self, token: str) -> User | None:
         new_bot = Bot(token, **self._bot_settings)
@@ -79,20 +95,7 @@ class XMultiBot(BaseBot):
             return False
 
     def register_minions(self, tokens: list[str]):
-        async def on_startup(bot: Bot):
-            for token in tokens:
-                new_bot = Bot(token, self.main_bot.session)
-                try:
-                    await new_bot.get_me()
-                except TelegramUnauthorizedError:
-                    continue
-                await new_bot.delete_webhook(drop_pending_updates=True)
-                await new_bot.set_webhook("/webhook/bot/" + token)
-                self.minions[token] = new_bot
-
-            await bot.set_webhook(f"{self._base_url}{MAIN_BOT_PATH}", secret_token=self._secret)
-
-        self.dispatcher.startup.register(on_startup)
+        self._startup_tokens = tokens
 
     async def start(self):
         runner = web.AppRunner(self.app)
