@@ -1,8 +1,7 @@
 import collections
 import json
-import logging
 import os.path
-from typing import Type
+from typing import TypeVar
 
 from pydantic import BaseModel
 
@@ -23,35 +22,28 @@ if not os.path.exists('data'):
 
 
 class BotSettings(BaseModel):
-    token: str
-    owners: list[int]
-    mongo: str
-    debug: bool
-    database: str
+    token: str = ''
+    owners: list[int] = []
+    mongo: str = ''
+    debug: bool = True
+    database: str = ''
 
 
 class BasicBotConfig(BaseModel):
-    bot: BotSettings
+    bot: BotSettings = BotSettings()
 
 
-def load_config(config_type: Type[BasicBotConfig], default_values: dict[str, ...]):
-    config_values = {
-        'bot': {
-            'token': '',
-            'owners': [],
-            'mongo': '',
-            'debug': False,
-            'database': ''
-        }
-    }
-    config_values = update(config_values, default_values)
+R = TypeVar('R')
+
+
+def load_config(config_type: R) -> R:
     if os.path.exists(config_file):
         with open(config_file, 'r', encoding='utf-8') as f:
-            user_config = json.load(f)
-            config_values = update(config_values, user_config)
-        with open(config_file, 'w', encoding='utf-8') as f:
-            json.dump(config_values, f, ensure_ascii=True, sort_keys=True, indent=4)
+            bot_config = config_type(**json.load(f))
     else:
-        logging.error('Config was created, restart needed')
-        exit(0)
-    return config_type(**config_values)
+        bot_config = config_type()
+
+    with open(config_file, 'w', encoding='utf-8') as f:
+        json.dump(bot_config.model_dump(), f, ensure_ascii=True, sort_keys=True, indent=4)
+
+    return bot_config
