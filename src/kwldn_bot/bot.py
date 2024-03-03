@@ -67,7 +67,7 @@ class XMultiBot(BaseBot):
                 except TelegramUnauthorizedError:
                     continue
                 await new_bot.delete_webhook(drop_pending_updates=True)
-                await new_bot.set_webhook("/webhook/bot/" + token)
+                await new_bot.set_webhook(f'{self._base_url}/webhook/bot/{token}')
                 self.minions[token] = new_bot
 
             await bot.set_webhook(f"{self._base_url}{MAIN_BOT_PATH}", secret_token=self._secret)
