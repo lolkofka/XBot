@@ -43,14 +43,14 @@ async def report(bot: Bot, owners: list[int], object_name: str, text: str, usern
             pass
 
 
-def add_to_router(main_router: Router, owners: list[int], url: str):
+def add_to_router(main_router: Router, main_bot: Bot, owners: list[int], url: str):
     error_handler_router = Router()
 
     @error_handler_router.error(F.update.message.as_("message"))
     async def error_handler(exception: ErrorEvent, message: Message):
         await message.reply('❌ Похоже, что-то пошло не так, репорт отправлен', reply_markup=get_support_markup(url))
 
-        await report(message.bot, owners, 'сообщения', message.text, message.from_user.username,
+        await report(main_bot, owners, 'сообщения', message.text, message.from_user.username,
                      message.from_user.id,
                      message.from_user.url)
 
@@ -58,7 +58,7 @@ def add_to_router(main_router: Router, owners: list[int], url: str):
     async def error_handler(exception: ErrorEvent, query: CallbackQuery):
         await query.answer('❌ Похоже, что-то пошло не так, репорт отправлен', show_alert=True)
 
-        await report(query.bot, owners, 'кнопки', query.data, query.from_user.username, query.from_user.id,
+        await report(main_bot, owners, 'кнопки', query.data, query.from_user.username, query.from_user.id,
                      query.from_user.url)
 
     main_router.include_router(error_handler_router)
