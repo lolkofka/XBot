@@ -12,7 +12,7 @@ if not os.path.exists('data'):
 
 class BotSettings(BaseModel):
     token: str = ''
-    owners: list[int] = []
+    owners: list[str] = []
     mongo: str = ''
     debug: bool = True
     database: str = ''

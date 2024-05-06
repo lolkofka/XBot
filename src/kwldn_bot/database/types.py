@@ -1,10 +1,9 @@
-import datetime
-from typing import Optional
+from datetime import datetime
 
 from beanie import Document
 
 
 class BaseUser(Document):
-    user_id: int
-    username: Optional[str]
-    joined: datetime.datetime
+    user_id: str
+    username: str | None
+    joined: datetime
