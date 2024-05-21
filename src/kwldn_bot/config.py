@@ -1,6 +1,5 @@
 import json
 import os.path
-from typing import TypeVar
 
 from pydantic import BaseModel
 
@@ -12,7 +11,7 @@ if not os.path.exists('data'):
 
 class BotSettings(BaseModel):
     token: str = ''
-    owners: list[str] = []
+    owners: list[int] = []
     mongo: str = ''
     debug: bool = True
     database: str = ''
@@ -30,6 +29,3 @@ class BasicBotConfig(BaseModel):
 
         with open(config_file, 'w', encoding='utf-8') as f:
             json.dump(self.model_dump(), f, ensure_ascii=True, sort_keys=True, indent=4)
-
-
-R = TypeVar('R')

@@ -4,6 +4,6 @@ from beanie import Document
 
 
 class BaseUser(Document):
-    user_id: str
+    user_id: int
     username: str | None
     joined: datetime
