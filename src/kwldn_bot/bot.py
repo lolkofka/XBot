@@ -3,6 +3,7 @@ import random
 import string
 
 from aiogram import Dispatcher, Router, Bot
+from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramUnauthorizedError
@@ -19,7 +20,10 @@ class BaseBot:
         self.dispatcher = Dispatcher()
         self.dispatcher.include_router(self.router)
 
-        self._bot_settings = {"session": AiohttpSession(), "parse_mode": ParseMode.HTML}
+        self._bot_settings = {
+            'session': AiohttpSession(),
+            'default': DefaultBotProperties(parse_mode=ParseMode.HTML)
+        }
         self.main_bot = Bot(self.token, **self._bot_settings)
 
     async def start(self) -> None:
